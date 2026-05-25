@@ -1,40 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-// ─────────────────────────────────────────────
-// ENTRY POINT  (hapus jika sudah ada main.dart)
-// ─────────────────────────────────────────────
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
-  runApp(const EcoCampusApp());
-}
-
-class EcoCampusApp extends StatelessWidget {
-  const EcoCampusApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'EcoCampus',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Poppins',
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A6B4A),
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // MODEL SEDERHANA (replace dengan model nyata)

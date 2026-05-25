@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'screens/homescreen.dart';
 
@@ -36,17 +37,22 @@ class EcoCampusApp extends StatelessWidget {
 
       // ── Theme ──────────────────────────────────
       theme: ThemeData(
-        fontFamily: 'Poppins',
+        textTheme: GoogleFonts.poppinsTextTheme(),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1A6B4A),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF4FAF7),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0D4A30),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFF0D4A30),
           foregroundColor: Colors.white,
           elevation: 0,
+          titleTextStyle: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
 
