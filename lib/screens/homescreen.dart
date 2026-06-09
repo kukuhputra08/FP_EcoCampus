@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'profilescreen.dart';
-import 'buat_laporan_screen.dart';
-import 'laporan_screen.dart';
-import '../data/report_data.dart';
-import '../models/report_model.dart';
-import 'package:intl/intl.dart';
+import 'rewardscreen.dart';
+import 'leaderboardscreen.dart';
+import 'badgescreen.dart';
+import 'redeemscreen.dart';
 
 // ─────────────────────────────────────────────
 // PLACEHOLDER SCREEN (untuk semua route sementara)
@@ -74,6 +73,22 @@ class PlaceholderScreen extends StatelessWidget {
 // ─────────────────────────────────────────────
 // MODELS
 // ─────────────────────────────────────────────
+class ReportItem {
+  final String title;
+  final String category;
+  final String status;
+  final String timeAgo;
+  final Color statusColor;
+
+  const ReportItem({
+    required this.title,
+    required this.category,
+    required this.status,
+    required this.timeAgo,
+    required this.statusColor,
+  });
+}
+
 class ChallengeItem {
   final String title;
   final int points;
@@ -130,6 +145,12 @@ class _HomeScreenState extends State<HomeScreen>
   static const Color _textSec      = Color(0xFF5A7A6A);
 
   // ── Dummy Data ───────────────────────────────
+  final List<ReportItem> _reports = const [
+    ReportItem(title: 'Tumpukan sampah di Gedung B',    category: 'Sampah',     status: 'Diproses', timeAgo: '2 jam lalu',  statusColor: Color(0xFFF59E0B)),
+    ReportItem(title: 'Lampu taman mati depan rektorat', category: 'Fasilitas',  status: 'Selesai',  timeAgo: '1 hari lalu', statusColor: Color(0xFF10B981)),
+    ReportItem(title: 'Saluran air tersumbat parkiran',  category: 'Lingkungan', status: 'Pending',  timeAgo: '3 hari lalu', statusColor: Color(0xFF6B7280)),
+  ];
+
   final List<ChallengeItem> _challenges = const [
     ChallengeItem(title: 'Bawa tumbler hari ini',          points: 50, icon: '🧴', isDone: true),
     ChallengeItem(title: 'Foto lingkungan bersih',         points: 30, icon: '📸', isDone: false),
@@ -159,14 +180,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ── Helper Navigate ──────────────────────────
   void _goto(String title, IconData icon, Color color) {
-    if (title == 'Buat Laporan') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const BuatLaporanScreen()));
-      return;
-    }
-    if (title == 'Laporan') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const LaporanScreen()));
-      return;
-    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -199,9 +212,8 @@ class _HomeScreenState extends State<HomeScreen>
                   _sectionHeader('Daily Challenge 🌿',
                       Icons.emoji_events_rounded,
                       trailing: 'Lihat Semua',
-                      onTrailing: () => _goto('Daily Challenge',
-                          Icons.emoji_events_rounded,
-                          const Color(0xFFF59E0B))),
+                      onTrailing: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const RewardScreen()))),
                   const SizedBox(height: 12),
                   _buildChallenges(),
                   const SizedBox(height: 28),
@@ -473,8 +485,8 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.emoji_events_rounded,
             color: const Color(0xFFF59E0B),
             bg: const Color(0xFFFFFBEB),
-            onTap: () => _goto('Daily Challenge', Icons.emoji_events_rounded,
-                const Color(0xFFF59E0B)),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RewardScreen())),
           ),
           _actionBtn(
             label: 'Event &\nVolunteer',
@@ -489,8 +501,8 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.leaderboard_rounded,
             color: const Color(0xFF3B82F6),
             bg: const Color(0xFFEFF6FF),
-            onTap: () => _goto(
-                'Papan Skor', Icons.leaderboard_rounded, const Color(0xFF3B82F6)),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const LeaderboardScreen())),
           ),
         ],
       ),
@@ -554,8 +566,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _challengeCard(ChallengeItem c) {
     return GestureDetector(
-      onTap: () => _goto(
-          'Daily Challenge', Icons.emoji_events_rounded, const Color(0xFFF59E0B)),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const RewardScreen())),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -650,15 +662,14 @@ class _HomeScreenState extends State<HomeScreen>
   // RECENT REPORTS
   // ═══════════════════════════════════════════════
   Widget _buildReports() {
-    final recentReports = ReportData.reports.take(3).toList();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-          children: recentReports.map((r) => _reportCard(r)).toList()),
+      child:
+      Column(children: _reports.map((r) => _reportCard(r)).toList()),
     );
   }
 
-  Widget _reportCard(ReportModel r) {
+  Widget _reportCard(ReportItem r) {
     final Map<String, dynamic> meta = {
       'Sampah':    {'icon': Icons.delete_outline_rounded,  'color': const Color(0xFF10B981)},
       'Fasilitas': {'icon': Icons.build_outlined,           'color': const Color(0xFF3B82F6)},
@@ -669,7 +680,8 @@ class _HomeScreenState extends State<HomeScreen>
         meta[r.category]?['color'] ?? _primaryLight;
 
     return GestureDetector(
-      onTap: () => _goto('Laporan', Icons.assignment_rounded, const Color(0xFF3B82F6)),
+      onTap: () =>
+          _goto('Detail Laporan', Icons.assignment_rounded, const Color(0xFF3B82F6)),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -706,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 3),
-                  Text('${r.category}  •  ${DateFormat('dd MMM').format(r.date)}',
+                  Text('${r.category}  •  ${r.timeAgo}',
                       style: TextStyle(color: _textSec, fontSize: 11)),
                 ],
               ),
@@ -716,11 +728,11 @@ class _HomeScreenState extends State<HomeScreen>
               padding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                  color: _getStatusColor(r.status).withOpacity(0.12),
+                  color: r.statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(8)),
               child: Text(r.status,
                   style: TextStyle(
-                      color: _getStatusColor(r.status),
+                      color: r.statusColor,
                       fontSize: 11,
                       fontWeight: FontWeight.w600)),
             ),
@@ -728,17 +740,6 @@ class _HomeScreenState extends State<HomeScreen>
         ),
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Selesai':
-        return const Color(0xFF10B981);
-      case 'Diproses':
-        return const Color(0xFFF59E0B);
-      default:
-        return const Color(0xFF6B7280);
-    }
   }
 
   // ═══════════════════════════════════════════════
@@ -872,8 +873,8 @@ class _HomeScreenState extends State<HomeScreen>
             _navItem(2, Icons.emoji_events_rounded, 'Reward',
                 onTap: () {
                   setState(() => _currentIndex = 2);
-                  _goto('Reward & Challenge', Icons.emoji_events_rounded,
-                      const Color(0xFFF59E0B));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const RewardScreen()));
                 }),
             _navItem(3, Icons.person_rounded, 'Profil',
                 onTap: () {
