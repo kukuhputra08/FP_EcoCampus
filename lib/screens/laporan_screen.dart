@@ -5,11 +5,29 @@ import '../data/report_data.dart';
 import '../models/report_model.dart';
 import 'buat_laporan_screen.dart';
 
-class LaporanScreen extends StatelessWidget {
+class LaporanScreen extends StatefulWidget {
   const LaporanScreen({super.key});
 
   @override
+  State<LaporanScreen> createState() => _LaporanScreenState();
+}
+
+class _LaporanScreenState extends State<LaporanScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filteredReports = ReportData.reports
+        .where((r) => r.title.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAF7),
       appBar: AppBar(
@@ -23,15 +41,73 @@ class LaporanScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ReportData.reports.isEmpty
-          ? const Center(child: Text("No reports yet."))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: ReportData.reports.length,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) => setState(() => _searchQuery = value),
+              decoration: InputDecoration(
+                hintText: 'Search reports...',
+                hintStyle: const TextStyle(color: Color(0xFFADB5BD), fontSize: 14),
+                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF5A7A6A), size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Color(0xFFADB5BD), size: 18),
+                  onPressed: () => setState(() {
+                    _searchQuery = '';
+                    _searchController.clear();
+                  }),
+                )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF2E9E6E), width: 1.5),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: filteredReports.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _searchQuery.isNotEmpty ? Icons.search_off_rounded : Icons.description_outlined,
+                    size: 48,
+                    color: const Color(0xFFADB5BD),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _searchQuery.isNotEmpty ? 'No reports match "$_searchQuery"' : 'No reports yet.',
+                    style: const TextStyle(color: Color(0xFF5A7A6A), fontSize: 14),
+                  ),
+                ],
+              ),
+            )
+                : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              itemCount: filteredReports.length,
               itemBuilder: (context, index) {
-                return _ReportCard(report: ReportData.reports[index]);
+                return _ReportCard(report: filteredReports[index]);
               },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
@@ -72,9 +148,8 @@ class _ReportCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: Image.file(
                 File(report.imagePath!),
-                height: 180,
                 width: double.infinity,
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => Container(
                   height: 180,
                   color: Colors.grey[200],

@@ -4,6 +4,8 @@ import 'rewardscreen.dart';
 import 'leaderboardscreen.dart';
 import 'badgescreen.dart';
 import 'redeemscreen.dart';
+import 'laporan_screen.dart';
+import 'buat_laporan_screen.dart';
 
 // ─────────────────────────────────────────────
 // PLACEHOLDER SCREEN (untuk semua route sementara)
@@ -219,9 +221,8 @@ class _HomeScreenState extends State<HomeScreen>
                   const SizedBox(height: 28),
                   _sectionHeader('Laporan Terbaru', Icons.assignment_rounded,
                       trailing: 'Lihat Semua',
-                      onTrailing: () => _goto('Laporan',
-                          Icons.assignment_rounded,
-                          const Color(0xFF3B82F6))),
+                      onTrailing: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const LaporanScreen()))),
                   const SizedBox(height: 12),
                   _buildReports(),
                   const SizedBox(height: 28),
@@ -477,8 +478,8 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.add_photo_alternate_rounded,
             color: _primary,
             bg: const Color(0xFFE8F7F0),
-            onTap: () => _goto(
-                'Buat Laporan', Icons.add_photo_alternate_rounded, _primary),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const BuatLaporanScreen())),
           ),
           _actionBtn(
             label: 'Challenge\nHarian',
@@ -680,8 +681,8 @@ class _HomeScreenState extends State<HomeScreen>
         meta[r.category]?['color'] ?? _primaryLight;
 
     return GestureDetector(
-      onTap: () =>
-          _goto('Detail Laporan', Icons.assignment_rounded, const Color(0xFF3B82F6)),
+      onTap: () => Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const LaporanScreen())),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
@@ -867,7 +868,8 @@ class _HomeScreenState extends State<HomeScreen>
             _navItem(1, Icons.assignment_rounded, 'Laporan',
                 onTap: () {
                   setState(() => _currentIndex = 1);
-                  _goto('Laporan', Icons.assignment_rounded, const Color(0xFF3B82F6));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const LaporanScreen()));
                 }),
             const SizedBox(width: 48), // ruang FAB
             _navItem(2, Icons.emoji_events_rounded, 'Reward',
@@ -915,8 +917,8 @@ class _HomeScreenState extends State<HomeScreen>
   // ═══════════════════════════════════════════════
   Widget _buildFAB() {
     return FloatingActionButton(
-      onPressed: () =>
-          _goto('Buat Laporan', Icons.add_photo_alternate_rounded, _primary),
+      onPressed: () => Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const BuatLaporanScreen())),
       backgroundColor: _primary,
       elevation: 5,
       child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),

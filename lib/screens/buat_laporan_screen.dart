@@ -18,6 +18,7 @@ class _BuatLaporanScreenState extends State<BuatLaporanScreen> {
   final _categoryController = TextEditingController();
   String _selectedLocation = 'Room 1';
   File? _image;
+  bool _imageError = false;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage(ImageSource source) async {
@@ -25,6 +26,7 @@ class _BuatLaporanScreenState extends State<BuatLaporanScreen> {
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
+        _imageError = false;
       });
     }
   }
@@ -58,7 +60,11 @@ class _BuatLaporanScreenState extends State<BuatLaporanScreen> {
   }
 
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
+    final imageValid = _image != null;
+    if (!imageValid) {
+      setState(() => _imageError = true);
+    }
+    if (_formKey.currentState!.validate() && imageValid) {
       final newReport = ReportModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _titleController.text,
@@ -128,26 +134,36 @@ class _BuatLaporanScreenState extends State<BuatLaporanScreen> {
               GestureDetector(
                 onTap: () => _showImageSourceActionSheet(context),
                 child: Container(
-                  height: 150,
                   width: double.infinity,
+                  constraints: const BoxConstraints(minHeight: 150),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE0E0E0)),
+                    border: Border.all(
+                      color: _imageError ? const Color(0xFFEF4444) : const Color(0xFFE0E0E0),
+                      width: _imageError ? 1.5 : 1,
+                    ),
                   ),
                   child: _image != null
                       ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.file(_image!, fit: BoxFit.cover),
-                        )
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.file(_image!, fit: BoxFit.contain),
+                  )
                       : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.add_a_photo_outlined, color: Color(0xFF2E9E6E), size: 40),
-                            SizedBox(height: 8),
-                            Text("Add Photo", style: TextStyle(color: Color(0xFF5A7A6A))),
-                          ],
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_a_photo_outlined,
+                          color: _imageError ? const Color(0xFFEF4444) : const Color(0xFF2E9E6E), size: 40),
+                      const SizedBox(height: 8),
+                      Text(
+                        _imageError ? "Photo is required" : "Add Photo",
+                        style: TextStyle(
+                          color: _imageError ? const Color(0xFFEF4444) : const Color(0xFF5A7A6A),
+                          fontWeight: _imageError ? FontWeight.w600 : FontWeight.normal,
                         ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
