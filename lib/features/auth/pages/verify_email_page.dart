@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../../core/constants/app_assets.dart';
-import '../../home/home_page.dart';
+import '../../main_navigation/main_navigation_page.dart';
 import 'login_page.dart';
 
 class VerifyEmailPage extends StatelessWidget {
@@ -11,7 +11,7 @@ class VerifyEmailPage extends StatelessWidget {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const HomePage(),
+        builder: (context) => const MainNavigationPage(),
       ),
     );
   }

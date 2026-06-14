@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'login_page.dart';
 import 'verify_email_page.dart';
+import '../../../services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,11 +13,18 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final AuthService authService = AuthService();
+
   bool isPasswordHidden = true;
   bool isConfirmPasswordHidden = true;
+  bool isLoading = false;
+  bool isLoadingOptions = true;
 
-  String? selectedUniversity;
-  String? selectedDepartment;
+  String? selectedUniversityId;
+  String? selectedDepartmentId;
+
+  List<UniversityOption> universities = [];
+  Map<String, List<DepartmentOption>> departmentsByUniversityId = {};
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -24,42 +33,160 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController confirmPasswordController =
       TextEditingController();
 
-  final List<String> universities = [
-    'Test University',
-    'Institut Teknologi Sepuluh Nopember',
-  ];
+  List<DepartmentOption> get availableDepartments {
+    if (selectedUniversityId == null) return [];
+    return departmentsByUniversityId[selectedUniversityId] ?? [];
+  }
 
-  final Map<String, List<String>> departments = {
-    'Test University': [
-      'Ilmu Testing',
-    ],
-    'Institut Teknologi Sepuluh Nopember': [
-      'Teknik Informatika',
-      'Sistem Informasi',
-      'Teknik Elektro',
-    ],
-  };
+  UniversityOption? get selectedUniversity {
+    if (selectedUniversityId == null) return null;
 
-  List<String> get availableDepartments {
-    if (selectedUniversity == null) return [];
-    return departments[selectedUniversity] ?? [];
+    try {
+      return universities.firstWhere(
+        (item) => item.id == selectedUniversityId,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  DepartmentOption? get selectedDepartment {
+    if (selectedDepartmentId == null) return null;
+
+    try {
+      return availableDepartments.firstWhere(
+        (item) => item.id == selectedDepartmentId,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    studentIdController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    loadAcademicOptions();
   }
 
-  void handleRegister() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const VerifyEmailPage(),
+  Future<void> loadAcademicOptions() async {
+    setState(() {
+      isLoadingOptions = true;
+    });
+
+    try {
+      final AcademicOptions options =
+          await authService.getAcademicOptionsFromAdmins();
+
+      if (!mounted) return;
+
+      setState(() {
+        universities = options.universities;
+        departmentsByUniversityId = options.departmentsByUniversityId;
+        isLoadingOptions = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        isLoadingOptions = false;
+      });
+
+      showMessage('Gagal memuat data kampus: $error');
+    }
+  }
+
+  Future<void> handleRegister() async {
+    final String name = nameController.text.trim();
+    final String email = emailController.text.trim();
+    final String studentId = studentIdController.text.trim();
+    final String password = passwordController.text.trim();
+    final String confirmPassword = confirmPasswordController.text.trim();
+
+    if (name.isEmpty ||
+        email.isEmpty ||
+        studentId.isEmpty ||
+        selectedUniversity == null ||
+        selectedDepartment == null ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      showMessage('Semua field wajib diisi.');
+      return;
+    }
+
+    if (!email.contains('@')) {
+      showMessage('Format email tidak valid.');
+      return;
+    }
+
+    if (password.length < 6) {
+      showMessage('Password minimal 6 karakter.');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      showMessage('Konfirmasi password tidak sama.');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await authService.registerStudent(
+        name: name,
+        email: email,
+        studentId: studentId,
+        universityId: selectedUniversity!.id,
+        universityName: selectedUniversity!.name,
+        universityShortName: selectedUniversity!.shortName,
+        departmentId: selectedDepartment!.id,
+        departmentName: selectedDepartment!.name,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      showMessage('Registrasi berhasil. Silakan verifikasi email kamu.');
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const VerifyEmailPage(),
+        ),
+      );
+    } on FirebaseAuthException catch (error) {
+      String message = 'Registrasi gagal.';
+
+      if (error.code == 'email-already-in-use') {
+        message = 'Email sudah terdaftar.';
+      } else if (error.code == 'invalid-email') {
+        message = 'Format email tidak valid.';
+      } else if (error.code == 'weak-password') {
+        message = 'Password terlalu lemah.';
+      } else if (error.code == 'network-request-failed') {
+        message = 'Koneksi internet bermasalah.';
+      }
+
+      if (!mounted) return;
+      showMessage(message);
+    } catch (error) {
+      if (!mounted) return;
+      showMessage('Terjadi kesalahan: $error');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  void showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -71,6 +198,16 @@ class _RegisterPageState extends State<RegisterPage> {
         builder: (context) => const LoginPage(),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    studentIdController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -165,7 +302,6 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                         ),
                         const SizedBox(height: 34),
-
                         _buildLabel('Full Name'),
                         const SizedBox(height: 10),
                         _buildTextField(
@@ -173,9 +309,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           hintText: 'Budi Santoso',
                           icon: Icons.person_outline_rounded,
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('Email'),
                         const SizedBox(height: 10),
                         _buildTextField(
@@ -184,9 +318,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           icon: Icons.mail_outline_rounded,
                           keyboardType: TextInputType.emailAddress,
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('Student ID / NIM / NRP'),
                         const SizedBox(height: 10),
                         _buildTextField(
@@ -194,83 +326,99 @@ class _RegisterPageState extends State<RegisterPage> {
                           hintText: '5026241001',
                           icon: Icons.badge_outlined,
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('University'),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
-                          value: selectedUniversity,
+                          value: selectedUniversityId,
                           isExpanded: true,
                           decoration: _inputDecoration(
-                            hintText: 'Select university',
+                            hintText: isLoadingOptions
+                                ? 'Loading universities...'
+                                : universities.isEmpty
+                                    ? 'No university available'
+                                    : 'Select university',
                             icon: Icons.account_balance_rounded,
                           ),
                           items: universities.map((university) {
+                            final String label = university.shortName.isEmpty
+                                ? university.name
+                                : '${university.name} (${university.shortName})';
+
                             return DropdownMenuItem(
-                              value: university,
+                              value: university.id,
                               child: Text(
-                                university,
+                                label,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
                             );
                           }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedUniversity = value;
-                              selectedDepartment = null;
-                            });
-                          },
+                          onChanged: isLoading ||
+                                  isLoadingOptions ||
+                                  universities.isEmpty
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    selectedUniversityId = value;
+                                    selectedDepartmentId = null;
+                                  });
+                                },
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('Department'),
                         const SizedBox(height: 10),
                         DropdownButtonFormField<String>(
-                          value: selectedDepartment,
+                          value: selectedDepartmentId,
                           isExpanded: true,
                           decoration: _inputDecoration(
-                            hintText: 'Select department',
+                            hintText: selectedUniversityId == null
+                                ? 'Select university first'
+                                : availableDepartments.isEmpty
+                                    ? 'No department available'
+                                    : 'Select department',
                             icon: Icons.apartment_rounded,
                           ),
                           items: availableDepartments.map((department) {
                             return DropdownMenuItem(
-                              value: department,
+                              value: department.id,
                               child: Text(
-                                department,
+                                department.name,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
                             );
                           }).toList(),
-                          onChanged: selectedUniversity == null
+                          onChanged: selectedUniversityId == null ||
+                                  isLoading ||
+                                  isLoadingOptions ||
+                                  availableDepartments.isEmpty
                               ? null
                               : (value) {
                                   setState(() {
-                                    selectedDepartment = value;
+                                    selectedDepartmentId = value;
                                   });
                                 },
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('Password'),
                         const SizedBox(height: 10),
                         TextField(
                           controller: passwordController,
                           obscureText: isPasswordHidden,
+                          enabled: !isLoading,
                           decoration: _inputDecoration(
                             hintText: '••••••••',
                             icon: Icons.lock_outline_rounded,
                           ).copyWith(
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  isPasswordHidden = !isPasswordHidden;
-                                });
-                              },
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        isPasswordHidden = !isPasswordHidden;
+                                      });
+                                    },
                               icon: Icon(
                                 isPasswordHidden
                                     ? Icons.visibility_off_rounded
@@ -280,25 +428,26 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 20),
-
                         _buildLabel('Confirm Password'),
                         const SizedBox(height: 10),
                         TextField(
                           controller: confirmPasswordController,
                           obscureText: isConfirmPasswordHidden,
+                          enabled: !isLoading,
                           decoration: _inputDecoration(
                             hintText: '••••••••',
                             icon: Icons.verified_user_outlined,
                           ).copyWith(
                             suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  isConfirmPasswordHidden =
-                                      !isConfirmPasswordHidden;
-                                });
-                              },
+                              onPressed: isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        isConfirmPasswordHidden =
+                                            !isConfirmPasswordHidden;
+                                      });
+                                    },
                               icon: Icon(
                                 isConfirmPasswordHidden
                                     ? Icons.visibility_off_rounded
@@ -308,47 +457,54 @@ class _RegisterPageState extends State<RegisterPage> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 34),
-
                         SizedBox(
                           width: double.infinity,
                           height: 60,
                           child: ElevatedButton(
-                            onPressed: handleRegister,
+                            onPressed: isLoading ? null : handleRegister,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF166534),
                               foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  const Color(0xFF94A3B8),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Create Account',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.2,
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.6,
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Create Account',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 10),
+                                      Icon(
+                                        Icons.arrow_forward_rounded,
+                                        size: 24,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(width: 10),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 24,
-                                ),
-                              ],
-                            ),
                           ),
                         ),
-
                         const SizedBox(height: 26),
-
                         GestureDetector(
-                          onTap: goToLogin,
+                          onTap: isLoading ? null : goToLogin,
                           child: RichText(
                             textAlign: TextAlign.center,
                             text: const TextSpan(
@@ -400,6 +556,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
+      enabled: !isLoading,
       decoration: _inputDecoration(
         hintText: hintText,
         icon: icon,
@@ -426,6 +583,7 @@ class _RegisterPageState extends State<RegisterPage> {
       border: _inputBorder(),
       enabledBorder: _inputBorder(),
       focusedBorder: _focusedBorder(),
+      disabledBorder: _inputBorder(),
     );
   }
 

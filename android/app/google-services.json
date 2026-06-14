@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "112623087948",
+    "firebase_url": "https://ecocampus-53082-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "ecocampus-53082",
+    "storage_bucket": "ecocampus-53082.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:112623087948:android:ace2543cf0a3c9080e5fe9",
+        "android_client_info": {
+          "package_name": "com.example.eco_campus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7UcINBjJKGDbQFyqY7dSOUVSj2R8N_H0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
